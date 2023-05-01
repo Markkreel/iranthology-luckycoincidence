@@ -1,0 +1,12 @@
+<topics>
+  <topic number="1">
+    <title>entity recognition</title>
+    <description>Retrieval of documents related to entity recognition.</description>
+    <narrative>Relevant documents should highlight entity recognition and its methods and applications. Documents that do not mention entity recognition are not relevant.</narrative>
+  </topic>
+  <topic number="2">
+    <title>relevance assessments</title>
+    <description>Retrieval of documents related to relevance assessments.</description>
+    <narrative>.</narrative>
+  </topic>
+</topics>

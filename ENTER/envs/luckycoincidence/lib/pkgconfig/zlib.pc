@@ -1,0 +1,13 @@
+prefix=/home/mark/Projects/Python/information_retrieval/luckycoincidence/ENTER/envs/luckycoincidence
+exec_prefix=/home/mark/Projects/Python/information_retrieval/luckycoincidence/ENTER/envs/luckycoincidence
+libdir=/home/mark/Projects/Python/information_retrieval/luckycoincidence/ENTER/envs/luckycoincidence/lib
+sharedlibdir=/home/mark/Projects/Python/information_retrieval/luckycoincidence/ENTER/envs/luckycoincidence/lib
+includedir=/home/mark/Projects/Python/information_retrieval/luckycoincidence/ENTER/envs/luckycoincidence/include
+
+Name: zlib
+Description: zlib compression library
+Version: 1.2.13
+
+Requires:
+Libs: -L${libdir} -L${sharedlibdir} -lz
+Cflags: -I${includedir}
