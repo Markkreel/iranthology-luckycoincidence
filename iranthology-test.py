@@ -1,7 +1,8 @@
 import unittest
 import ir_datasets
 from ir_datasets.formats import JsonlDocs, TrecXmlQueries, TrecQrels
-from ir_datasets.util.download import MemoryCache
+#Maik: I commented this line out, I am not sure where a MemoryCache class can be found (I grepped in the source code, and could not find it)
+#from ir_datasets.util.download import MemoryCache
 from ir_datasets.datasets.base import Dataset
 from typing import NamedTuple, Dict
 
