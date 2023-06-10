@@ -1,5 +1,0 @@
-#!/home/mark/Projects/Python/information_retrieval/luckycoincidence/ENTER/envs/luckycoincidence/bin/python3.11
-
-from idlelib.pyshell import main
-if __name__ == '__main__':
-    main()

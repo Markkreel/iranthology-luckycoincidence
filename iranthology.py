@@ -14,5 +14,6 @@ class IrAntologyData(NamedTuple):
 
 ir_datasets.registry.register('iranthology-lucky-coincidence', Dataset(
     JsonlDocs(ir_datasets.util.PackageDataFile(path='datasets_in_progress/ir-anthology-07-11-2021-ss23.jsonl'), doc_cls=IrAntologyData, lang='en'),
-    TrecXmlQueries(ir_datasets.util.PackageDataFile(path='datasets_in_progress/topics.xml'))
+    TrecXmlQueries(ir_datasets.util.PackageDataFile(path='datasets_in_progress/topics.xml'), lang='en'),
+    TrecQrels(ir_datasets.util.PackageDataFile(path='datasets_in_progress/qrels.txt'), {0:'Not Relevant', 1:'Relevant'})
 ))
