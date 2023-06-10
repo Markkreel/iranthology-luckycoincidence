@@ -8,7 +8,7 @@ RUN apk add jq libffi-dev && pip3 install jupyter ir_datasets
 WORKDIR /app
 
 # Copy the notebook and all necessary files into the container
-COPY . /usr/lib/python3.8/site-packages/ir_datasets/datasets_in_progress/
+COPY iranthology.py processed_dataset.jsonl iranthology-luckycoincidence.ipynb topics.xml qrels.txt /usr/lib/python3.8/site-packages/ir_datasets/datasets_in_progress/
 
 # Expose the port that the Jupyter notebook runs on
 EXPOSE 8888
