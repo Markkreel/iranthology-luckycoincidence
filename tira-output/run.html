@@ -1,0 +1,687 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="icon"
+    href="https://raw.githubusercontent.com/capreolus-ir/diffir/master/docs/images/icon.png">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+    integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/css/bootstrap-select.min.css">
+  <title>diffir: IR model comparision</title>
+  <style>
+    .card {
+      margin: 5px !important;
+    }
+
+    .highlight {
+      background-color: #ffffd3;
+    }
+
+    #DocumentOverlay {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: rgba(0, 0, 0, .25);
+    }
+
+    #DocumentDetails {
+      position: fixed;
+      top: 60px;
+      left: 10%;
+      right: 10%;
+      bottom: 60px;
+      background-color: white;
+      padding: 20px;
+      border: 1px solid rgba(0, 0, 0, .125);
+      border-radius: 0.25rem;
+      box-shadow: 0 0 16px black;
+      overflow: auto;
+    }
+
+    .close-overlay {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      border-radius: 100%;
+      background-color: #111;
+      font-size: 17px;
+      padding: 9px;
+      color: white;
+      width: 30px;
+      height: 30px;
+      text-align: center;
+      font-weight: normal;
+      line-height: 11px;
+      cursor: pointer;
+    }
+
+    .docid {
+      background-color: rgb(224, 135, 55);
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 20px;
+      overflow: hidden;
+      margin-bottom: 0;
+      border-radius: 0;
+      font-weight: normal;
+      white-space: nowrap;
+    }
+
+    .docid-value {
+      transform: rotate(90deg);
+      font-size: 0.7em;
+      padding-left: 8px;
+    }
+
+    .fields th {
+      vertical-align: top;
+      text-align: right;
+      padding-right: 12px;
+      color: #999;
+      font-weight: normal;
+    }
+
+    #query-container {
+      max-width: 600px;
+      border: 1px solid #999;
+      border-radius: 0.25rem;
+      margin: 20px auto;
+      padding: 10px;
+    }
+
+    .other-rank {
+      font-size: 1.2em;
+      display: inline-block;
+      width: 20px;
+      margin-top: 46px;
+      margin-left: 3px;
+      margin-right: 3px;
+      cursor: help;
+    }
+
+    mark {
+      padding: 0;
+      font-weight: bold;
+    }
+
+    .snippet {
+      font-size: 0.9em;
+      line-height: 1.2;
+    }
+
+    .elip {
+      text-align: center;
+      margin: 16px;
+      color: gray;
+    }
+
+    .doc-info {
+      white-space: nowrap;
+    }
+
+    .card-header {
+      min-height: 128px;
+      cursor: pointer;
+    }
+
+    .swatch {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      vertical-align: middle;
+    }
+
+    .form-group {
+      width: 150px;
+      height: 20px;
+      padding-left: 10px;
+      padding-top: 10px;
+    }
+
+    .nobackground {
+      background: transparent !important;
+      font-weight: normal;
+    }
+    .styled-table {
+      margin-left: 0px;
+      margin-top: 10px;
+      border-collapse: collapse;    
+      font-size: 0.9em;
+      /* font-family: sans-serif;       */
+      min-width: 350px;      
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+    }
+    .styled-table thead tr {
+      background-color: #17a2b8;
+      color: #ffffff;
+      text-align: left;
+    }    
+    /* .styled-table th, */
+    .styled-table td {
+      /* padding: 12px 15px; */
+      text-align: center;
+    }    
+    .styled-table tbody tr {
+      color: #ffffff;
+    }
+    /*
+    .styled-table tbody tr:nth-of-type(even) {
+      background-color: #f3f3f3;
+    } */
+
+    .styled-table tbody tr:last-of-type {
+      border-bottom: 2px solid #009879;
+    }
+
+    #ranking-summary ul li span {
+      margin-right: 5px;
+    }    
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="collapse bg-dark" id="navbarHeader">
+      <div class="container">
+        <div class="row">
+          <div class="col-sm-6 col-md-6 py-4">
+            <h6 class="text-white">Summary</h6>
+            <p class="text-white" id="ranking-summary"></p>
+          </div>
+          <div class="col-sm-5 col-md-5 py-4"> 
+            <h6 class="text-white">Ranking statistics</h6>                                   
+            <ul>
+              <li class="text-white"><span id="contrast-measure"></span></li>
+              <li class="text-white"> <span>Relevance metrics</span> <div id="metrics"></div></li>
+            </ul>                        
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="navbar navbar-dark bg-dark box-shadow navbar-fixed-top">
+      <div class="container d-flex justify-content-between">
+        <a href="#" class="navbar-brand d-flex align-items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search"
+            viewBox="0 0 16 16">
+            <path
+              d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
+          </svg>
+          <strong style="padding-left:  5px;">DiffIR</strong>
+        </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarHeader"
+          aria-controls="navbarHeader" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+      </div>
+    </div>
+  </header>
+  <div class="container">
+    <div class="input-group" style="padding-top: 50px; padding-bottom: 10px; background-color: white;">
+      <select id="Queries" data-width="100%" data-style="border" data-container="body"></select>
+    </div>
+    <div id="query-container" class="sticky-top" style="background-color: white;">
+      <div style="position:relative">
+        <button id="query-collapse-btn" style="position: absolute; top: 12px; right: 8px;" type="button"
+          class="btn btn-outline-info btn-sm" data-toggle="collapse" data-target=".query_collapse" aria-expanded="false"
+          aria-controls="query_collapse">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+            class="bi bi-arrows-angle-expand" viewBox="0 0 16 16">
+            <path fill-rule="evenodd"
+              d="M5.828 10.172a.5.5 0 0 0-.707 0l-4.096 4.096V11.5a.5.5 0 0 0-1 0v3.975a.5.5 0 0 0 .5.5H4.5a.5.5 0 0 0 0-1H1.732l4.096-4.096a.5.5 0 0 0 0-.707zm4.344-4.344a.5.5 0 0 0 .707 0l4.096-4.096V4.5a.5.5 0 1 0 1 0V.525a.5.5 0 0 0-.5-.5H11.5a.5.5 0 0 0 0 1h2.768l-4.096 4.096a.5.5 0 0 0 0 .707z" />
+          </svg>
+        </button>
+      </div>
+      <div id="Query" style="padding-right: 45px;">
+      </div>
+    </div>
+    <div class="row justify-content-center" id="runName">
+      <div class="col">
+        <h6 id="Run1Name" style="text-align: center;"></h6>
+      </div>
+      <div class="col">
+        <h6 id="Run2Name" style="text-align: center;"></h6>
+      </div>
+    </div>
+    <div class="row" id="docList">
+      <div id="Run1Docs" class="col">
+      </div>
+      <div id="Run2Docs" class="col">
+      </div>
+    </div>    
+  </div>
+  <!-- Optional JavaScript -->
+  <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+  <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+    integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+    crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+    integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+    crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+    integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/js/bootstrap-select.min.js"></script>
+  <script type="text/javascript">
+    var data = {"meta": {"run1_name": "/tira-data/output/run.txt", "run2_name": null, "dataset": "iranthology-lucky-coincidence", "measure": "topk", "qrelDefs": {"0": "Not Relevant", "1": "Relevant"}, "queryFields": ["query_id", "title", "description", "narrative"], "docFields": ["doc_id", "text"], "relevanceColors": {"null": "#888888", "0": "#d54541", "1": "#52b262"}}, "queries": [{"fields": {"query_id": "1", "title": "entity recognition", "description": "Retrieval of documents related to entity recognition.", "narrative": "Relevant documents should highlight entity recognition and its methods and applications. Documents that do not mention entity recognition are not relevant.", "contrast": {"name": "singlerun", "value": 0}}, "metrics": {"P@1": [1.0], "P@3": [0.6666666666666666], "P@5": [0.4], "P@10": [0.5], "nDCG@1": [1.0], "nDCG@3": [0.7653606369886217], "nDCG@5": [0.5531464700081437], "nDCG@10": [0.568003577662161]}, "run_1": [{"doc_id": "2015.wwwconf_conference-2015c.71", "score": 17.28706085130689, "relevance": 1, "rank": 1, "weights": {"doc_id": [], "default_text": [[8, 14, 1.0], [59, 65, 1.0], [66, 77, 1.0], [182, 188, 1.0], [189, 200, 1.0], [260, 266, 1.0], [267, 278, 1.0], [320, 326, 1.0]]}, "snippet": {"field": "default_text", "start": 3, "stop": 203, "weights": [[5, 11, 1.0], [56, 62, 1.0], [63, 74, 1.0], [179, 185, 1.0], [186, 197, 1.0]]}}, {"doc_id": "2020.sigirconf_conference-2020.184", "score": 16.815410542875565, "relevance": 1, "rank": 2, "weights": {"doc_id": [], "default_text": [[11, 17, 1.0], [47, 53, 1.0], [54, 65, 1.0], [417, 428, 1.0], [558, 564, 1.0], [611, 622, 1.0]]}, "snippet": {"field": "default_text", "start": 6, "stop": 206, "weights": [[5, 11, 1.0], [41, 47, 1.0], [48, 59, 1.0]]}}, {"doc_id": "2004.sigirconf_conference-2004.37", "score": 16.674604381020156, "relevance": null, "rank": 3, "weights": {"doc_id": [], "default_text": [[14, 20, 1.0], [21, 32, 1.0], [208, 214, 1.0], [215, 226, 1.0], [391, 397, 1.0], [471, 477, 1.0], [478, 489, 1.0]]}, "snippet": {"field": "default_text", "start": 9, "stop": 209, "weights": [[5, 11, 1.0], [12, 23, 1.0], [199, 205, 1.0]]}}, {"doc_id": "2015.clef_conference-2015w.168", "score": 16.563636332025332, "relevance": null, "rank": 4, "weights": {"doc_id": [], "default_text": [[60, 66, 1.0], [67, 78, 1.0], [99, 105, 1.0], [106, 117, 1.0], [583, 589, 1.0], [590, 601, 1.0], [637, 643, 1.0], [874, 880, 1.0], [881, 892, 1.0], [975, 981, 1.0], [982, 993, 1.0]]}, "snippet": {"field": "default_text", "start": 55, "stop": 255, "weights": [[5, 11, 1.0], [12, 23, 1.0], [44, 50, 1.0], [51, 62, 1.0]]}}, {"doc_id": "2015.clef_conference-2015w.167", "score": 16.563636332025332, "relevance": null, "rank": 5, "weights": {"doc_id": [], "default_text": [[60, 66, 1.0], [67, 78, 1.0], [99, 105, 1.0], [106, 117, 1.0], [583, 589, 1.0], [590, 601, 1.0], [637, 643, 1.0], [874, 880, 1.0], [881, 892, 1.0], [975, 981, 1.0], [982, 993, 1.0]]}, "snippet": {"field": "default_text", "start": 55, "stop": 255, "weights": [[5, 11, 1.0], [12, 23, 1.0], [44, 50, 1.0], [51, 62, 1.0]]}}, {"doc_id": "2020.clef_conference-2020w.119", "score": 16.54676073414426, "relevance": null, "rank": 6, "weights": {"doc_id": [], "default_text": [[6, 12, 1.0], [13, 24, 1.0], [339, 345, 1.0], [346, 357, 1.0], [359, 365, 1.0], [388, 394, 1.0], [426, 432, 1.0], [433, 444, 1.0], [492, 498, 1.0], [693, 699, 1.0]]}, "snippet": {"field": "default_text", "start": 334, "stop": 534, "weights": [[5, 11, 1.0], [12, 23, 1.0], [25, 31, 1.0], [54, 60, 1.0], [92, 98, 1.0], [99, 110, 1.0], [158, 164, 1.0]]}}, {"doc_id": "2017.clef_conference-2017w.49", "score": 16.42897292453955, "relevance": 1, "rank": 7, "weights": {"doc_id": [], "default_text": [[0, 6, 1.0], [7, 18, 1.0]]}, "snippet": {"field": "default_text", "start": 0, "stop": 200, "weights": [[0, 6, 1.0], [7, 18, 1.0]]}}, {"doc_id": "2009.jasis_journal-ir0anthology0volumeA60A8.9", "score": 16.42897292453955, "relevance": 1, "rank": 8, "weights": {"doc_id": [], "default_text": [[12, 18, 1.0], [19, 30, 1.0]]}, "snippet": {"field": "default_text", "start": 7, "stop": 207, "weights": [[5, 11, 1.0], [12, 23, 1.0]]}}, {"doc_id": "2006.clef_workshop-2006.57", "score": 16.42897292453955, "relevance": 1, "rank": 9, "weights": {"doc_id": [], "default_text": [[14, 20, 1.0], [21, 32, 1.0]]}, "snippet": {"field": "default_text", "start": 9, "stop": 209, "weights": [[5, 11, 1.0], [12, 23, 1.0]]}}, {"doc_id": "2019.sigirconf_conference-2019.253", "score": 16.220557076045473, "relevance": null, "rank": 10, "weights": {"doc_id": [], "default_text": [[9, 15, 1.0], [16, 27, 1.0]]}, "snippet": {"field": "default_text", "start": 4, "stop": 204, "weights": [[5, 11, 1.0], [12, 23, 1.0]]}}], "run_2": [], "summary": [["5 unjudged doc(s) move to a top spot in the ranking"]], "mergedWeights": {}}, {"fields": {"query_id": "2", "title": "relevance assessments", "description": "Retrieval of documents related to relevance assessments.", "narrative": "Relevant documents should highlight relevance assessments and its methods and applications. Documents that do not mention relevance assessments are not relevant.", "contrast": {"name": "singlerun", "value": 0}}, "metrics": {"P@1": [1.0], "P@3": [0.3333333333333333], "P@5": [0.4], "P@10": [0.4], "nDCG@1": [1.0], "nDCG@3": [0.46927872602275644], "nDCG@5": [0.4703652827859579], "nDCG@10": [0.4422195942380129]}, "run_1": [{"doc_id": "2008.tois_journal-ir0anthology0volumeA27A1.0", "score": 15.01158851205184, "relevance": 1, "rank": 1, "weights": {"doc_id": [], "default_text": [[19, 28, 1.0], [194, 203, 1.0], [204, 215, 1.0], [227, 236, 1.0], [237, 248, 1.0], [409, 418, 1.0], [419, 430, 1.0], [593, 602, 1.0], [736, 745, 1.0], [746, 757, 1.0], [837, 846, 1.0], [847, 858, 1.0], [1077, 1088, 1.0], [1225, 1236, 1.0], [1290, 1301, 1.0]]}, "snippet": {"field": "default_text", "start": 14, "stop": 214, "weights": [[5, 14, 1.0], [180, 189, 1.0], [190, 201, 1.0]]}}, {"doc_id": "2002.clef_workshop-2002w.5", "score": 14.79061503980865, "relevance": null, "rank": 2, "weights": {"doc_id": [], "default_text": [[15, 24, 1.0], [88, 97, 1.0], [166, 175, 1.0]]}, "snippet": {"field": "default_text", "start": 10, "stop": 210, "weights": [[5, 14, 1.0], [78, 87, 1.0], [156, 165, 1.0]]}}, {"doc_id": "2012.sigirconf_conference-2012.115", "score": 14.607735310311277, "relevance": null, "rank": 3, "weights": {"doc_id": [], "default_text": [[37, 46, 1.0], [47, 58, 1.0], [133, 142, 1.0], [143, 154, 1.0], [293, 302, 1.0], [303, 314, 1.0], [511, 520, 1.0], [521, 532, 1.0], [577, 586, 1.0], [757, 766, 1.0], [767, 778, 1.0], [826, 835, 1.0], [1107, 1116, 1.0], [1117, 1128, 1.0], [1286, 1295, 1.0], [1296, 1307, 1.0], [1991, 2002, 1.0]]}, "snippet": {"field": "default_text", "start": 32, "stop": 232, "weights": [[5, 14, 1.0], [15, 26, 1.0], [101, 110, 1.0], [111, 122, 1.0]]}}, {"doc_id": "2014.sigirconf_conference-2014.224", "score": 14.518640644529693, "relevance": null, "rank": 4, "weights": {"doc_id": [], "default_text": [[43, 54, 1.0], [58, 67, 1.0], [206, 215, 1.0], [216, 227, 1.0], [299, 308, 1.0], [309, 320, 1.0]]}, "snippet": {"field": "default_text", "start": 38, "stop": 238, "weights": [[5, 16, 1.0], [20, 29, 1.0], [168, 177, 1.0], [178, 189, 1.0]]}}, {"doc_id": "2004.cikm_conference-2004.59", "score": 14.299789674712931, "relevance": 1, "rank": 5, "weights": {"doc_id": [], "default_text": [[36, 45, 1.0], [46, 57, 1.0], [194, 203, 1.0], [204, 215, 1.0], [253, 262, 1.0], [263, 274, 1.0], [611, 620, 1.0], [764, 773, 1.0], [774, 785, 1.0]]}, "snippet": {"field": "default_text", "start": 31, "stop": 231, "weights": [[5, 14, 1.0], [15, 26, 1.0], [163, 172, 1.0], [173, 184, 1.0]]}}, {"doc_id": "2002.sigirconf_conference-2002.44", "score": 14.102271810947414, "relevance": null, "rank": 6, "weights": {"doc_id": [], "default_text": [[8, 17, 1.0], [188, 197, 1.0], [198, 209, 1.0], [246, 255, 1.0], [573, 582, 1.0], [590, 599, 1.0], [922, 931, 1.0], [1040, 1049, 1.0]]}, "snippet": {"field": "default_text", "start": 3, "stop": 203, "weights": [[5, 14, 1.0], [185, 194, 1.0], [195, 206, 1.0]]}}, {"doc_id": "2014.sigirjournals_journal-ir0anthology0volumeA48A2.0", "score": 14.032766913145323, "relevance": 1, "rank": 7, "weights": {"doc_id": [], "default_text": [[18, 27, 1.0], [28, 39, 1.0]]}, "snippet": {"field": "default_text", "start": 13, "stop": 213, "weights": [[5, 14, 1.0], [15, 26, 1.0]]}}, {"doc_id": "2018.sigirconf_conference-2018.163", "score": 14.030878892217807, "relevance": null, "rank": 8, "weights": {"doc_id": [], "default_text": [[132, 141, 1.0], [183, 194, 1.0], [272, 281, 1.0], [282, 293, 1.0], [549, 558, 1.0], [559, 570, 1.0], [703, 712, 1.0], [713, 724, 1.0]]}, "snippet": {"field": "default_text", "start": 127, "stop": 327, "weights": [[5, 14, 1.0], [56, 67, 1.0], [145, 154, 1.0], [155, 166, 1.0]]}}, {"doc_id": "2012.wsdm_conference-2012.41", "score": 13.925116322016912, "relevance": null, "rank": 9, "weights": {"doc_id": [], "default_text": [[181, 192, 1.0], [394, 403, 1.0], [404, 415, 1.0], [576, 585, 1.0], [748, 757, 1.0], [1014, 1023, 1.0], [1024, 1035, 1.0]]}, "snippet": {"field": "default_text", "start": 389, "stop": 589, "weights": [[5, 14, 1.0], [15, 26, 1.0], [187, 196, 1.0]]}}, {"doc_id": "1996.ipm_journal-ir0anthology0volumeA32A3.1", "score": 13.850114825497577, "relevance": 1, "rank": 10, "weights": {"doc_id": [], "default_text": [[0, 9, 1.0]]}, "snippet": {"field": "default_text", "start": 0, "stop": 200, "weights": [[0, 9, 1.0]]}}], "run_2": [], "summary": [["6 unjudged doc(s) move to a top spot in the ranking"]], "mergedWeights": {}}], "docs": {"2002.clef_workshop-2002w.5": {"doc_id": "2002.clef_workshop-2002w.5", "default_text": "Cross-Language Relevance Assessment and Task Context. An experiment on how users assess relevance in a foreign language they know well is reported. Results show that relevance assessment in a foreign language takes more time and is prone to errors compared to assessment in the reader's first language. The results are related to task and context and an enhanced methodology for performing context-sensitive studies is reported.", "text": "Cross-Language Relevance Assessment and Task Context. An experiment on how users assess relevance in a foreign language they know well is reported. Results show that relevance assessment in a foreign language takes more time and is prone to errors compared to assessment in the reader's first language. The results are related to task and context and an enhanced methodology for performing context-sensitive studies is reported."}, "2006.clef_workshop-2006.57": {"doc_id": "2006.clef_workshop-2006.57", "default_text": "The Effect of Entity Recognition on Answer Validation. ", "text": "The Effect of Entity Recognition on Answer Validation. "}, "2019.sigirconf_conference-2019.253": {"doc_id": "2019.sigirconf_conference-2019.253", "default_text": "Implicit Entity Recognition, Classification and Linking in Tweets. ", "text": "Implicit Entity Recognition, Classification and Linking in Tweets. "}, "2012.sigirconf_conference-2012.115": {"doc_id": "2012.sigirconf_conference-2012.115", "default_text": "CrowdTerrier: automatic crowdsourced relevance assessments with terrier. ABSTRACTInformation retrieval (IR) systems rely on document relevance assessments for queries to gauge their effectiveness for a variety of tasks, e.g. Web result ranking. Evaluation forums such as TREC and CLEF provide relevance assessments for common tasks. However, it is not possible for such venues to cover all of the collections and tasks currently investigated in IR. Hence, it falls to the individual researchers to generate the relevance assessments for new tasks and/or collections. Moreover, relevance assessment generation can be a time-consuming, difficult and potentially costly process. Recently, crowdsourcing has been shown to be a fast and cheap method to generate relevance assessments in a semi-automatic manner . In this case, the relevance assessment task is outsourced to a large group of non-expert workers, where workers are rewarded via micro-payments.In this demo, we present CrowdTerrier, an infrastructure extension to the open source Terrier IR platform  1 that enables the semi-automatic generation of relevance assessments for a variety of document ranking tasks using crowdsourcing. The aim of CrowdTerrier is to reduce the time and expertise required to effectively Crowdsource relevance assessments by abstracting away from the complexities of the crowdsourcing process. It achieves this by automating the assessment process as much as possible, via a close integration of the IR system that ranks the documents (Terrier) and the crowdsourcing marketplace that is used to assess those documents (Amazon's Mechanical Turk (MTurk)).As illustrated in , CrowdTerrier is comprised of three components. CrowdControl handles the conversion of ranked results from Terrier as well as the administration of the MTurk tasks. The JSP Interface is responsible for the presentation of the pages to be assessed and the assessment interface. Finally the Validator performs quality assurance on the assessments produced, possibly with human input. Each of these components is fully customisable to facilitate tackling different tasks and collections.", "text": "CrowdTerrier: automatic crowdsourced relevance assessments with terrier. ABSTRACTInformation retrieval (IR) systems rely on document relevance assessments for queries to gauge their effectiveness for a variety of tasks, e.g. Web result ranking. Evaluation forums such as TREC and CLEF provide relevance assessments for common tasks. However, it is not possible for such venues to cover all of the collections and tasks currently investigated in IR. Hence, it falls to the individual researchers to generate the relevance assessments for new tasks and/or collections. Moreover, relevance assessment generation can be a time-consuming, difficult and potentially costly process. Recently, crowdsourcing has been shown to be a fast and cheap method to generate relevance assessments in a semi-automatic manner . In this case, the relevance assessment task is outsourced to a large group of non-expert workers, where workers are rewarded via micro-payments.In this demo, we present CrowdTerrier, an infrastructure extension to the open source Terrier IR platform  1 that enables the semi-automatic generation of relevance assessments for a variety of document ranking tasks using crowdsourcing. The aim of CrowdTerrier is to reduce the time and expertise required to effectively Crowdsource relevance assessments by abstracting away from the complexities of the crowdsourcing process. It achieves this by automating the assessment process as much as possible, via a close integration of the IR system that ranks the documents (Terrier) and the crowdsourcing marketplace that is used to assess those documents (Amazon's Mechanical Turk (MTurk)).As illustrated in , CrowdTerrier is comprised of three components. CrowdControl handles the conversion of ranked results from Terrier as well as the administration of the MTurk tasks. The JSP Interface is responsible for the presentation of the pages to be assessed and the assessment interface. Finally the Validator performs quality assurance on the assessments produced, possibly with human input. Each of these components is fully customisable to facilitate tackling different tasks and collections."}, "2014.sigirconf_conference-2014.224": {"doc_id": "2014.sigirconf_conference-2014.224", "default_text": "SIGIR 2014 workshop on gathering efficient assessments of relevance (GEAR). ABSTRACTEvaluation is a fundamental part of Information Retrieval, and in the conventional Cranfield evaluation paradigm, sets of relevance assessments are a fundamental part of test collections. This workshop revisits how relevance assessments can be efficiently created, seeking to provide a forum for discussion and exploration of the topic.", "text": "SIGIR 2014 workshop on gathering efficient assessments of relevance (GEAR). ABSTRACTEvaluation is a fundamental part of Information Retrieval, and in the conventional Cranfield evaluation paradigm, sets of relevance assessments are a fundamental part of test collections. This workshop revisits how relevance assessments can be efficiently created, seeking to provide a forum for discussion and exploration of the topic."}, "2004.sigirconf_conference-2004.37": {"doc_id": "2004.sigirconf_conference-2004.37", "default_text": "Focused named entity recognition using machine learning. ABSTRACTIn this paper we study the problem of finding most topical named entities among all entities in a document, which we refer to as focused named entity recognition. We show that these focused named entities are useful for many natural language processing applications, such as document summarization, search result ranking, and entity detection and tracking. We propose a statistical model for focused named entity recognition by converting it into a classification problem. We then study the impact of various linguistic features and compare a number of classification algorithms. From experiments on an annotated Chinese news corpus, we demonstrate that the proposed method can achieve near human-level accuracy.", "text": "Focused named entity recognition using machine learning. ABSTRACTIn this paper we study the problem of finding most topical named entities among all entities in a document, which we refer to as focused named entity recognition. We show that these focused named entities are useful for many natural language processing applications, such as document summarization, search result ranking, and entity detection and tracking. We propose a statistical model for focused named entity recognition by converting it into a classification problem. We then study the impact of various linguistic features and compare a number of classification algorithms. From experiments on an annotated Chinese news corpus, we demonstrate that the proposed method can achieve near human-level accuracy."}, "2018.sigirconf_conference-2018.163": {"doc_id": "2018.sigirconf_conference-2018.163", "default_text": "Beyond Pooling. ABSTRACTDynamic Sampling is a novel, non-uniform, statistical sampling strategy in which documents are selected for relevance assessment based on the results of prior assessments. Unlike static and dynamic pooling methods that are commonly used to compile relevance assessments for the creation of information retrieval test collections, Dynamic Sampling yields a statistical sample from which substantially unbiased estimates of effectiveness measures may be derived. In contrast to static sampling strategies, which make no use of relevance assessments, Dynamic Sampling is able to select documents from a much larger universe, yielding superior test collections for a given budget of relevance assessments. These assertions are supported by simulation studies using secondary data from the TREC 2017 Common Core Track.", "text": "Beyond Pooling. ABSTRACTDynamic Sampling is a novel, non-uniform, statistical sampling strategy in which documents are selected for relevance assessment based on the results of prior assessments. Unlike static and dynamic pooling methods that are commonly used to compile relevance assessments for the creation of information retrieval test collections, Dynamic Sampling yields a statistical sample from which substantially unbiased estimates of effectiveness measures may be derived. In contrast to static sampling strategies, which make no use of relevance assessments, Dynamic Sampling is able to select documents from a much larger universe, yielding superior test collections for a given budget of relevance assessments. These assertions are supported by simulation studies using secondary data from the TREC 2017 Common Core Track."}, "2002.sigirconf_conference-2002.44": {"doc_id": "2002.sigirconf_conference-2002.44", "default_text": "Liberal relevance criteria of TREC -: counting on negligible documents?. ABSTRACTMost test collections (like TREC and CLEF) for experimental research in information retrieval apply binary relevance assessments. This paper introduces a four-point relevance scale and reports the findings of a project in which TREC-7 and TREC-8 document pools on 38 topics were reassessed. The goal of the reassessment was to build a subcollection of TREC for experiments on highly relevant documents and to learn about the assessment process as well as the characteristics of a multigraded relevance corpus.Relevance criteria were defined so that a distinction was made between documents rich in topical information (relevant and highly relevant documents) and poor in topical information (marginally relevant documents). It turned out that about 50% of documents assessed as relevant were regarded as marginal. The characteristics of the relevance corpus and lessons learned from the reassessment project are discussed. The need to develop more elaborated relevance assessment schemes is emphasized.", "text": "Liberal relevance criteria of TREC -: counting on negligible documents?. ABSTRACTMost test collections (like TREC and CLEF) for experimental research in information retrieval apply binary relevance assessments. This paper introduces a four-point relevance scale and reports the findings of a project in which TREC-7 and TREC-8 document pools on 38 topics were reassessed. The goal of the reassessment was to build a subcollection of TREC for experiments on highly relevant documents and to learn about the assessment process as well as the characteristics of a multigraded relevance corpus.Relevance criteria were defined so that a distinction was made between documents rich in topical information (relevant and highly relevant documents) and poor in topical information (marginally relevant documents). It turned out that about 50% of documents assessed as relevant were regarded as marginal. The characteristics of the relevance corpus and lessons learned from the reassessment project are discussed. The need to develop more elaborated relevance assessment schemes is emphasized."}, "2020.sigirconf_conference-2020.184": {"doc_id": "2020.sigirconf_conference-2020.184", "default_text": "Predicting Entity Popularity to Improve Spoken Entity Recognition by Virtual Assistants. We focus on improving the effectiveness of a Virtual Assistant (VA) in recognizing emerging entities in spoken queries. We introduce a method that uses historical user interactions to forecast which entities will gain in popularity and become trending, and it subsequently integrates the predictions within the Automated Speech Recognition (ASR) component of the VA. Experiments show that our proposed approach results in a 20% relative reduction in errors on emerging entity name utterances without degrading the overall recognition quality of the system.", "text": "Predicting Entity Popularity to Improve Spoken Entity Recognition by Virtual Assistants. We focus on improving the effectiveness of a Virtual Assistant (VA) in recognizing emerging entities in spoken queries. We introduce a method that uses historical user interactions to forecast which entities will gain in popularity and become trending, and it subsequently integrates the predictions within the Automated Speech Recognition (ASR) component of the VA. Experiments show that our proposed approach results in a 20% relative reduction in errors on emerging entity name utterances without degrading the overall recognition quality of the system."}, "2015.clef_conference-2015w.167": {"doc_id": "2015.clef_conference-2015w.167", "default_text": "WI-ENRE in CLEF eHealth Evaluation Lab 2015: Clinical Named Entity Recognition Based on CRF. Named entity recognition of biomedical text is the shared task 1b of the 2015 CLEF eHealth evaluation lab, which focuses on making biomedical text easier to understand for patients and clinical workers. In this paper, we propose a novel method to recognize clinical entities based on conditional random fields (CRF). The biomedical texts are split into sections and paragraphs. Then the NLP tools are used for POS tagging and parsing, and four groups of features are extracted to train the entity recognition model. In the subsequent phase for entity normalization, the MetaMap of Unified Medical Language System (UMLS) tool is used to search for concept unique identifiers (CUIs) category. In addition, CRF++ package is adopted to recognize clinical entities in another phase for entity recognition. The experiments show that our system named as WI-ENRE, is effective in the named entity recognition of biomedical texts. The Fmeasure of EMEA and MEDLINE reach to 0.56 and 0.45 respectively in exact match.", "text": "WI-ENRE in CLEF eHealth Evaluation Lab 2015: Clinical Named Entity Recognition Based on CRF. Named entity recognition of biomedical text is the shared task 1b of the 2015 CLEF eHealth evaluation lab, which focuses on making biomedical text easier to understand for patients and clinical workers. In this paper, we propose a novel method to recognize clinical entities based on conditional random fields (CRF). The biomedical texts are split into sections and paragraphs. Then the NLP tools are used for POS tagging and parsing, and four groups of features are extracted to train the entity recognition model. In the subsequent phase for entity normalization, the MetaMap of Unified Medical Language System (UMLS) tool is used to search for concept unique identifiers (CUIs) category. In addition, CRF++ package is adopted to recognize clinical entities in another phase for entity recognition. The experiments show that our system named as WI-ENRE, is effective in the named entity recognition of biomedical texts. The Fmeasure of EMEA and MEDLINE reach to 0.56 and 0.45 respectively in exact match."}, "2015.clef_conference-2015w.168": {"doc_id": "2015.clef_conference-2015w.168", "default_text": "WI-ENRE in CLEF eHealth Evaluation Lab 2015: Clinical Named Entity Recognition Based on CRF. Named entity recognition of biomedical text is the shared task 1b of the 2015 CLEF eHealth evaluation lab, which focuses on making biomedical text easier to understand for patients and clinical workers. In this paper, we propose a novel method to recognize clinical entities based on conditional random fields (CRF). The biomedical texts are split into sections and paragraphs. Then the NLP tools are used for POS tagging and parsing, and four groups of features are extracted to train the entity recognition model. In the subsequent phase for entity normalization, the MetaMap of Unified Medical Language System (UMLS) tool is used to search for concept unique identifiers (CUIs) category. In addition, CRF++ package is adopted to recognize clinical entities in another phase for entity recognition. The experiments show that our system named as WI-ENRE, is effective in the named entity recognition of biomedical texts. The Fmeasure of EMEA and MEDLINE reach to 0.56 and 0.45 respectively in exact match.", "text": "WI-ENRE in CLEF eHealth Evaluation Lab 2015: Clinical Named Entity Recognition Based on CRF. Named entity recognition of biomedical text is the shared task 1b of the 2015 CLEF eHealth evaluation lab, which focuses on making biomedical text easier to understand for patients and clinical workers. In this paper, we propose a novel method to recognize clinical entities based on conditional random fields (CRF). The biomedical texts are split into sections and paragraphs. Then the NLP tools are used for POS tagging and parsing, and four groups of features are extracted to train the entity recognition model. In the subsequent phase for entity normalization, the MetaMap of Unified Medical Language System (UMLS) tool is used to search for concept unique identifiers (CUIs) category. In addition, CRF++ package is adopted to recognize clinical entities in another phase for entity recognition. The experiments show that our system named as WI-ENRE, is effective in the named entity recognition of biomedical texts. The Fmeasure of EMEA and MEDLINE reach to 0.56 and 0.45 respectively in exact match."}, "2020.clef_conference-2020w.119": {"doc_id": "2020.clef_conference-2020w.119", "default_text": "Named Entity Recognition and Linking on Historical Newspapers: UvA.ILPS & REL at CLEF HIPE 2020. This paper describes our submission to the CLEF HIPE 2020 shared task on identifying named entities in multilingual historical newspapers in French, German and English. The subtasks we addressed in our submission include coarse-grained named entity recognition, entity mention detection and entity linking. For the task of named entity recognition we used an ensemble of fine-tuned BERT models; entity linking was approached by three different methods: (1) a simple method relying on ElasticSearch retrieval scores, (2) an approach based on contextualised text embeddings, and (3) REL, a modular entity linking system based on several state-of-the-art components.", "text": "Named Entity Recognition and Linking on Historical Newspapers: UvA.ILPS & REL at CLEF HIPE 2020. This paper describes our submission to the CLEF HIPE 2020 shared task on identifying named entities in multilingual historical newspapers in French, German and English. The subtasks we addressed in our submission include coarse-grained named entity recognition, entity mention detection and entity linking. For the task of named entity recognition we used an ensemble of fine-tuned BERT models; entity linking was approached by three different methods: (1) a simple method relying on ElasticSearch retrieval scores, (2) an approach based on contextualised text embeddings, and (3) REL, a modular entity linking system based on several state-of-the-art components."}, "2017.clef_conference-2017w.49": {"doc_id": "2017.clef_conference-2017w.49", "default_text": "Entity Recognition and Language Identification with FELTS. ", "text": "Entity Recognition and Language Identification with FELTS. "}, "2012.wsdm_conference-2012.41": {"doc_id": "2012.wsdm_conference-2012.41", "default_text": "IR system evaluation using nugget-based test collections. ABSTRACTThe development of information retrieval systems such as search engines relies on good test collections, including assessments of retrieved content. The widely employed \"Cranfield paradigm\" dictates that the information relevant to a topic be encoded at the level of documents, therefore requiring effectively complete document relevance assessments. As this is no longer practical for modern corpora, numerous problems arise, including scalability, reusability, and applicability. We propose a new method for relevance assessment based on relevant information, not relevant documents. Once the relevant \"nuggets\" are collected, our matching method [23] can assess any document for relevance with high accuracy, and so any retrieved list of documents can be assessed for performance. In this paper we analyze the performance of the matching function by looking at specific cases and by comparing with other methods. We then show how these inferred relevance assessments can be used to perform IR system evaluation, and we discuss in particular reusability and scalability. Our main contribution is a methodology for producing test collections that are highly accurate, more complete, scalable, reusable, and can be generated with similar amounts of effort as existing methods, with great potential for future applications.", "text": "IR system evaluation using nugget-based test collections. ABSTRACTThe development of information retrieval systems such as search engines relies on good test collections, including assessments of retrieved content. The widely employed \"Cranfield paradigm\" dictates that the information relevant to a topic be encoded at the level of documents, therefore requiring effectively complete document relevance assessments. As this is no longer practical for modern corpora, numerous problems arise, including scalability, reusability, and applicability. We propose a new method for relevance assessment based on relevant information, not relevant documents. Once the relevant \"nuggets\" are collected, our matching method [23] can assess any document for relevance with high accuracy, and so any retrieved list of documents can be assessed for performance. In this paper we analyze the performance of the matching function by looking at specific cases and by comparing with other methods. We then show how these inferred relevance assessments can be used to perform IR system evaluation, and we discuss in particular reusability and scalability. Our main contribution is a methodology for producing test collections that are highly accurate, more complete, scalable, reusable, and can be generated with similar amounts of effort as existing methods, with great potential for future applications."}, "2004.cikm_conference-2004.59": {"doc_id": "2004.cikm_conference-2004.59", "default_text": "Providing consistent and exhaustive relevance assessments for XML retrieval evaluation. ABSTRACTComparing retrieval approaches requires test collections, which consist of documents, queries and relevance assessments. Obtaining consistent and exhaustive relevance assessments is crucial for the appropriate comparison of retrieval approaches. Whereas the evaluation methodology for flat text retrieval approaches is well established, the evaluation of XML retrieval approaches is a research issue. This is because XML documents are composed of nested components that cannot be considered independent in terms of relevance. This paper describes the methodology adopted in INEX (the INitiative for the Evaluation of XML Retrieval) to ensure consistent and exhaustive relevance assessments.", "text": "Providing consistent and exhaustive relevance assessments for XML retrieval evaluation. ABSTRACTComparing retrieval approaches requires test collections, which consist of documents, queries and relevance assessments. Obtaining consistent and exhaustive relevance assessments is crucial for the appropriate comparison of retrieval approaches. Whereas the evaluation methodology for flat text retrieval approaches is well established, the evaluation of XML retrieval approaches is a research issue. This is because XML documents are composed of nested components that cannot be considered independent in terms of relevance. This paper describes the methodology adopted in INEX (the INitiative for the Evaluation of XML Retrieval) to ensure consistent and exhaustive relevance assessments."}, "2015.wwwconf_conference-2015c.71": {"doc_id": "2015.wwwconf_conference-2015c.71", "default_text": "Towards Entity Correctness, Completeness and Emergence for Entity Recognition. ABSTRACTLinking words or phrases in unstructured text to entities in knowledge bases is the problem of entity recognition and disambiguation. In this paper, we focus on the task of entity recognition in Web text to address the challenges of entity correctness, completeness and emergence that existing approaches mainly suffer from. Experimental results show that our approach significantly outperforms the state-of-the-art approaches in terms of precision, F-measure, micro-accuracy and macro-accuracy, while still preserving high recall.", "text": "Towards Entity Correctness, Completeness and Emergence for Entity Recognition. ABSTRACTLinking words or phrases in unstructured text to entities in knowledge bases is the problem of entity recognition and disambiguation. In this paper, we focus on the task of entity recognition in Web text to address the challenges of entity correctness, completeness and emergence that existing approaches mainly suffer from. Experimental results show that our approach significantly outperforms the state-of-the-art approaches in terms of precision, F-measure, micro-accuracy and macro-accuracy, while still preserving high recall."}, "2009.jasis_journal-ir0anthology0volumeA60A8.9": {"doc_id": "2009.jasis_journal-ir0anthology0volumeA60A8.9", "default_text": "NERA: Named Entity Recognition for Arabic. ", "text": "NERA: Named Entity Recognition for Arabic. "}, "2014.sigirjournals_journal-ir0anthology0volumeA48A2.0": {"doc_id": "2014.sigirjournals_journal-ir0anthology0volumeA48A2.0", "default_text": "Visualization for Relevance Assessments. ", "text": "Visualization for Relevance Assessments. "}, "1996.ipm_journal-ir0anthology0volumeA32A3.1": {"doc_id": "1996.ipm_journal-ir0anthology0volumeA32A3.1", "default_text": "Relevance Judgments for Assessing Recall. ", "text": "Relevance Judgments for Assessing Recall. "}, "2008.tois_journal-ir0anthology0volumeA27A1.0": {"doc_id": "2008.tois_journal-ir0anthology0volumeA27A1.0", "default_text": "Sound and complete relevance assessment for XML retrieval. In information retrieval research, comparing retrieval approaches requires test collections consisting of documents, user requests and relevance assessments. Obtaining relevance assessments that are as sound and complete as possible is crucial for the comparison of retrieval approaches. In XML retrieval, the problem of obtaining sound and complete relevance assessments is further complicated by the structural relationships between retrieval results.A major difference between XML retrieval and flat document retrieval is that the relevance of elements (the retrievable units) is not independent of that of related elements. This has major consequences for the gathering of relevance assessments. This article describes investigations into the creation of sound and complete relevance assessments for the evaluation of content-oriented XML retrieval as carried out at INEX, the evaluation campaign for XML retrieval. The campaign, now in its seventh year, has had three substantially different approaches to gather assessments and has finally settled on a highlighting method for marking relevant passages within documents-even though the objective is to collect assessments at element level. The different methods of gathering assessments at INEX are discussed and contrasted. The highlighting method is shown to be the most reliable of the methods.", "text": "Sound and complete relevance assessment for XML retrieval. In information retrieval research, comparing retrieval approaches requires test collections consisting of documents, user requests and relevance assessments. Obtaining relevance assessments that are as sound and complete as possible is crucial for the comparison of retrieval approaches. In XML retrieval, the problem of obtaining sound and complete relevance assessments is further complicated by the structural relationships between retrieval results.A major difference between XML retrieval and flat document retrieval is that the relevance of elements (the retrievable units) is not independent of that of related elements. This has major consequences for the gathering of relevance assessments. This article describes investigations into the creation of sound and complete relevance assessments for the evaluation of content-oriented XML retrieval as carried out at INEX, the evaluation campaign for XML retrieval. The campaign, now in its seventh year, has had three substantially different approaches to gather assessments and has finally settled on a highlighting method for marking relevant passages within documents-even though the objective is to collect assessments at element level. The different methods of gathering assessments at INEX are discussed and contrasted. The highlighting method is shown to be the most reliable of the methods."}}};
+  </script>
+  <script type="text/javascript">
+    var allWeightsA = {};
+    var allWeightsB = {};
+    var mergedWeights = {};
+    var COLOR_A = '236, 154, 8';
+    var COLOR_B = '121, 196, 121';
+    var singleRunView = (data.meta.run2_name === null);
+
+    function markup(text, weights) {
+      weights = weights.filter(function (e) {
+        return (e[2] > 0 || typeof e[2] === 'string');
+      })
+      var $result = $('<div></div>');
+      if (weights.length === 0) {
+        $result.text(text);
+      } else {
+        $result.append($('<span></span>').text(text.substring(0, weights[0][0])));
+        $.each(weights, function (i, weight) {
+          if (typeof weight[2] === 'string') {
+            var weightColor = weight[2];
+          } else {
+            var weightColor = 'rgba(255, 237, 140, ' + weight[2].toString() + ')';
+          }
+          $result.append($('<mark></mark>').text(text.substring(weight[0], weight[1])).css('background', weightColor).attr("run1", weight[3]).attr("run2", weight[4]));
+          if (i + 1 < weights.length) {
+            $result.append($('<span></span>').text(text.substring(weight[1], weights[i + 1][0])));
+          }
+        });
+        $result.append($('<span></span>').text(text.substring(weights[weights.length - 1][1], text.length)));
+      }
+      return $result;
+    }
+
+    function colorizeWeights(mergedWeights) {
+      // deep copu & handle if doesn't exist
+      mergedWeights = mergedWeights ? JSON.parse(JSON.stringify(mergedWeights)) : [];
+      var results = mergedWeights.map((segment) => {
+        if (!("run2" in segment[2]) || segment[2].run2 === null) {
+          return [segment[0], segment[1], 'rgba(' + COLOR_A + ', ' + segment[2].run1.toString() + ')', segment[2].run1, segment[2].run2];
+        } else if (!("run" in segment[2]) || segment[2].run1 === null) {
+          return [segment[0], segment[1], 'rgba(' + COLOR_B + ', ' + segment[2].run2.toString() + ')', segment[2].run1, segment[2].run2];
+        } else {
+          var nil = 'rgba(0, 0, 0, 0)'
+          var colorA = 'rgba(' + COLOR_A + ', ' + segment[2].run1.toString() + ')';
+          var colorB = 'rgba(' + COLOR_B + ', ' + segment[2].run2.toString() + ')';
+          var overlapColors = 'linear-gradient(' + colorA + ', ' + nil + '), linear-gradient(' + nil + ', ' + colorB + ')'
+          return [segment[0], segment[1], overlapColors, segment[2].run1, segment[2].run2];
+        }
+      })
+      return results;
+    }
+    function generateDocListSingleView(run, container, oneRunWeights) {
+      $(container).empty();
+      $(container).css("padding-left", "15%").css("padding-right", "15%");
+      $.each(run, function (i, doc) {
+        oneRunWeights[doc.doc_id] = doc.weights;
+        if (i >= 1 && run[i - 1].rank + 1 != doc.rank) {
+          $('<div class="elip"></div>').text('⋮ ' + (doc.rank - run[i - 1].rank - 1).toString() + ' doc(s) skipped').appendTo(container);
+        }
+        var $did = $('<div class="docid"></div>').append($('<div class="docid-value"></div>').text(doc.doc_id));
+        $did.css('background-color', data.meta.relevanceColors[doc.relevance !== null ? doc.relevance.toString() : 'null']).css("right", '0');
+        if (doc.relevance === null) {
+          var $rel = $('<h6 class="badge badge-info">Unjudged</h6>').css('background-color', data.meta.relevanceColors['null']);
+        } else {
+          var $rel = $('<h6 class="badge badge-info"></h6>').text('Rel: ' + doc.relevance).css('background-color', data.meta.relevanceColors[doc.relevance.toString()]).attr('title', data.meta.qrelDefs[doc.relevance.toString()]).css('cursor', 'help');
+        }
+        var $score = $('<h6 class="badge"></h6>').text('Score: ' + doc.score.toFixed(4));
+        var doc_fields = data.docs[doc.doc_id];
+        var $text = markup(doc_fields[doc.snippet.field].substring(doc.snippet.start, doc.snippet.stop), doc.snippet.weights)
+        if (doc.snippet.stop < doc_fields[doc.snippet.field].length) {
+          $text.append('...');
+        }
+        if (doc.snippet.start > 0) {
+          $text.prepend('...');
+        }
+        $text.prepend($('<span style="color: #999;"></span>').text(doc.snippet.field + ': '));
+        var newEl = $('<div></div>')
+          .append($('<div class="card"></div>')
+            .attr('data-docid', doc.doc_id)
+            .attr('run1-rank', doc.rank)
+            .append($('<div class="card-header"></div>')
+              // .css('padding-' + docIdFloat, '30px')
+              .append(doc.rank)
+              .append(' ')
+              .append($did)
+              .append(' ')
+              .append($rel)
+              .append(' ')
+              .append($score)
+              .append($('<div class="snippet"></div>').append($text))
+            )
+          )
+          .appendTo(container);
+      });
+    }
+    function generateDocList(run, otherRun, container, docIdFloat, allWeights) {
+      $(container).empty();
+      $.each(run, function (i, doc) {
+        allWeights[doc.doc_id] = doc.weights;
+        if (i >= 1 && run[i - 1].rank + 1 != doc.rank) {
+          $('<div class="elip"></div>').text('⋮ ' + (doc.rank - run[i - 1].rank - 1).toString() + ' doc(s) skipped').appendTo(container);
+        }
+        var $did = $('<div class="docid"></div>').append($('<div class="docid-value"></div>').text(doc.doc_id));
+        $did.css('background-color', data.meta.relevanceColors[doc.relevance !== null ? doc.relevance.toString() : 'null']).css(docIdFloat, '0');
+        if (doc.relevance === null) {
+          var $rel = $('<h6 class="badge badge-info">Unjudged</h6>').css('background-color', data.meta.relevanceColors['null']);
+        } else {
+          var $rel = $('<h6 class="badge badge-info"></h6>').text('Rel: ' + doc.relevance).css('background-color', data.meta.relevanceColors[doc.relevance.toString()]).attr('title', data.meta.qrelDefs[doc.relevance.toString()]).css('cursor', 'help');
+        }
+        var $score = $('<h6 class="badge"></h6>').text('Score: ' + doc.score.toFixed(4));
+        var doc_fields = data.docs[doc.doc_id];
+        var $text = markup(doc_fields[doc.snippet.field].substring(doc.snippet.start, doc.snippet.stop), doc.snippet.weights)
+        if (doc.snippet.stop < doc_fields[doc.snippet.field].length) {
+          $text.append('...');
+        }
+        if (doc.snippet.start > 0) {
+          $text.prepend('...');
+        }
+        $text.prepend($('<span style="color: #999;"></span>').text(doc.snippet.field + ': '));
+        // $text.append(' ').append('<a href="#" class="doc-info" role="button">See more</a>');
+        var otherRank = null;
+        $.each(otherRun, function (i, otherDoc) {
+          if (otherDoc.doc_id === doc.doc_id) {
+            otherRank = otherDoc.rank;
+            return false; // break
+          }
+        });
+        if (otherRank === null) {
+          var symbol = '×';
+          var tip = 'not ranked in other run';
+        }
+        else if (doc.rank === otherRank) {
+          var symbol = docIdFloat === 'right' ? '→' : '←';
+          var tip = 'ranked equally in other run'
+        } else if (doc.rank < otherRank) {
+          var symbol = docIdFloat === 'right' ? '⬊' : '⬋';
+          var tip = 'ranked lower in other run (' + otherRank + ')'
+        } else if (doc.rank > otherRank) {
+          var symbol = docIdFloat === 'right' ? '⬈' : '⬉';
+          var tip = 'ranked higher in other run (' + otherRank + ')'
+        }
+        var newEl = $('<div></div>')
+          // .append($('<span class="other-rank"></span>').text(symbol).css('float', docIdFloat).css('text-align', docIdFloat === 'right' ? 'left' : 'right').attr('title', tip))
+          .append($('<div class="card"></div>')
+            .attr("run1-rank", docIdFloat === 'right' ? doc.rank : (otherRank === null ? "No" : otherRank))
+            .attr("run2-rank", docIdFloat === 'right' ? (otherRank === null ? "No" : otherRank): doc.rank)
+            .attr('data-docid', doc.doc_id)
+            .append($('<div class="card-header"></div>')
+              .css('padding-' + docIdFloat, '30px')
+              .append($("<span class='border badge' style='min-width: 50px; font-weight: normal;color: grey;'></span>").html('<span style="font-size: 1.2em;font-weight:bold; color: black;">'+doc.rank +'</span> '+symbol + (otherRank === null ? '': otherRank)).attr('title', tip))
+              .append(' ')
+              .append($did)
+              .append(' ')
+              .append($rel)
+              .append(' ')
+              .append($score)
+              .append($('<div class="snippet"></div>').append($text))
+            )
+          )
+          .appendTo(container);
+      });
+    }
+
+    function selectQuery() {
+      var $select = $('#Queries');
+      var query_id = $select.val();
+      var query = data.queries.filter(query => query.fields.query_id === query_id);
+      mergedWeights = query[0].mergedWeights
+      var $query = $('#Query');
+      $query.empty();
+      var $table = $('<table class="fields"></table>').appendTo($query);
+      if (query.length > 0) {
+        query = query[0];
+        $.each(query.fields, function (fname, fvalue) {
+          if (fname == "contrast"){
+            fvalue = fvalue.name +" (" + fvalue.value.toFixed(3)+")";
+            $("#contrast-measure").text("Contrast measure: "+fvalue);
+          } else {
+            $('<tr></tr>')
+            .append($('<th></th>').text(fname))
+            .append($('<td></td>').text(fvalue))
+            .appendTo($table);
+          }
+        });
+        colors = ["badge-secondary", "badge-info", "badge-warning", "badge-primary"]
+        $summary = $("<ul></ul>")
+        $.each(query.summary, function(index, data){
+          $l=$("<li></li>");
+          $.each(data, function(idx, statement){
+            $("<span class='badge "+ colors[index] +"'></span>").text(statement).appendTo($l);
+          });
+          $summary.append($l);
+        });
+        $("#ranking-summary").empty().append($summary)
+        if (singleRunView) {
+          var $metricsTable = $('<table class="styled-table" align="center"></table>')
+          $("<thead> <tr> <th>Metric</th> <td>Value</td>").appendTo($metricsTable);
+          $tbody = $("<tbody></tbody>");
+          $.each(query.metrics, function(metric_name, metric_value){
+            $('<tr></tr>').append($('<th></th>').text(metric_name))
+            .append($('<td></td>').text(metric_value[0]==null? "No" : metric_value[0].toFixed(3)))
+            .appendTo($tbody)
+          });
+          $metricsTable.append($tbody);
+          $("#metrics").empty().append($metricsTable);          
+          allWeightsA = {}
+          generateDocListSingleView(query.run_1, "#docList", allWeightsA);
+        } else {
+          var $metricsTable = $('<table class="styled-table" align="center"></table>')
+          $("<thead> <tr> <th>Metric</th> <td>Run1</td> <td>Run2</td></tr></thead>").appendTo($metricsTable);
+          $tbody = $("<tbody></tbody>");
+          $.each(query.metrics, function(metric_name, metric_value){
+            $('<tr></tr>').append($('<th></th>').text(metric_name))
+            .append($('<td></td>').text(metric_value[0] == null? "No" : metric_value[0].toFixed(3)))
+            .append($('<td></td>').text(metric_value[1] == null? "No" : metric_value[1].toFixed(3))).appendTo($tbody)
+          });
+          $metricsTable.append($tbody);
+          $("#metrics").empty().append($metricsTable);
+          allWeightsA = {};
+          allWeightsB = {};          
+          generateDocList(query.run_1, query.run_2, '#Run1Docs', 'right', allWeightsA);
+          generateDocList(query.run_2, query.run_1, '#Run2Docs', 'left', allWeightsB);          
+        }
+      }
+      var extraFields = $("#Query").find("tr").slice(2).attr("class", "query_collapse collapse");
+      // Don't show expand/collapse button if there are not fields to expand/collapse
+      $('#query-collapse-btn').toggle(extraFields.length > 0);
+    }
+
+    function checkThreshold(value, threshold) {
+      if (typeof value !== 'undefined') {
+        return parseFloat(value) < threshold;
+      } else return true;
+    }
+
+    function onChangeWeightThreshold() {
+      $("#DocumentDetails mark").removeClass("nobackground")
+      var run1Threshold = parseFloat($("#run1Threshold").text());
+      var run2Threshold = parseFloat($("#run2Threshold").text());
+      $("#DocumentDetails mark").each(function () {
+        var run1w = $(this).attr("run1");
+        var run2w = $(this).attr("run2");
+        if (checkThreshold(run1w, run1Threshold) && checkThreshold(run2w, run2Threshold)) {
+          $(this).addClass("nobackground");
+        } else if (checkThreshold(run1w, run1Threshold)) {
+          $(this).css("background", "rgba(" + COLOR_B + "," + run2w + ")");
+        } else if (checkThreshold(run2w, run2Threshold)) {
+          $(this).css("background", "rgba(" + COLOR_A + "," + run1w + ")");
+        } else {
+          $(this).css("background", 'linear-gradient(rgba('+ COLOR_A + "," + run1w + '),  rgba( '+ COLOR_B + "," + run2w + '))');
+        }
+      })
+    }
+
+    function onCardEnter() {
+      var did = $(this).attr('data-docid');
+      $('.card[data-docid="' + did + '"').addClass('highlight');
+    }
+
+    function onCardLeave() {
+      var did = $(this).attr('data-docid');
+      $('.card.highlight').removeClass('highlight');
+    }
+
+    function onDocInfoClick() {
+      var docid = $(this).closest('[data-docid]').attr('data-docid');
+      var doc = data.docs[docid];
+      $('<div id="DocumentOverlay"></div>').appendTo(document.body)
+      var page = $('<div id="DocumentDetails" class="sticky-top"></div>')
+        .append($('<div class="close-overlay">X</div>').click(closeDoc))
+        .appendTo(document.body);
+      var legendTable = $('<table class="fields"></table>')
+        .appendTo(page);
+      var run1Rank = $(this).closest('[run1-rank]').attr('run1-rank');
+      legendTable.append($('<tr></tr>')
+        .append($('<th></th>').text(data.meta.run1_name))
+        .append($('<td></td>')
+          .append($('<span class="swatch"></span>').css('background-color', 'rgb(' + COLOR_A + ')'))
+        )
+        .append($('<td></td>').append($(" <span class='border badge' style='min-width: 70px;'></span>").text("Rank: " +run1Rank)))
+        .append($('<td></td>').append($('<form><div class="form-group"><input type="range" class="form-control-range" min="0", max="1.1", step="0.1" value="0.1" id="weightThresholdA"></div></form>').attr("title", "slide to change weight threshold")))
+        .append($('<td><span id="run1Threshold" class="badge border rounded threshold-value">0.1</span></td>'))
+      );
+      if (!singleRunView) {
+        var run2Rank = $(this).closest('[run2-rank]').attr('run2-rank');
+        legendTable.append($('<tr></tr>')
+          .append($('<th></th>').text(data.meta.run2_name))
+          .append($('<td></td>')
+            .append($('<span class="swatch"></span>').css('background-color', 'rgb(' + COLOR_B + ')'))
+          )
+          .append($('<td></td>').append($(" <span class='border badge' style='min-width: 70px;'></span>").text("Rank: " +run2Rank)))
+          .append($('<td></td>')
+            .append($('<form><div class="form-group"><input type="range" class="form-control-range" min="0", max="1.1", step="0.1" value="0.1" id="weightThresholdB"></div></form>').attr("title", "slide to change weight threshold"))
+          ).append($('<td><span id="run2Threshold" class="badge border rounded threshold-value">0.1</span></td>'))
+        );
+        legendTable.append($('<tr></tr>')
+          .append($('<th>both</th>'))
+          .append($('<td></td>')
+            .append($('<span class="swatch"></span>').css('background', 'linear-gradient(rgb(' + COLOR_A + '), rgb(' + COLOR_B + '))'))
+          ));
+      }
+      var fieldTable = $('<table class="fields"></table>')
+        .appendTo(page);
+      var weightsA = allWeightsA[docid] || {};
+      var weightsB = allWeightsB[docid] || {};
+      var mweights = mergedWeights[docid] || {};
+
+      $.each(doc, function (fname, fvalue) {
+        if (singleRunView) {
+          if (!(fname in weightsA)) {
+            mweights[fname] = [];
+          } else {
+            mweights[fname] = weightsA[fname].map(segment => {
+              return [segment[0], segment[1], { "run1": segment[2] }];
+            });
+          }
+        }
+        var weights = colorizeWeights(mweights[fname]);
+        $('<tr></tr>')
+          .append($('<th></th>').text(fname))
+          .append($('<td></td>').append(markup(fvalue, weights)))
+          .appendTo(fieldTable);
+      });
+
+      $("input").change(function () {
+        var threshold = $(this).closest("form :input").val();
+        if ($(this).attr("id") === "weightThresholdA") {
+          $("#run1Threshold").text(threshold);
+        } else {
+          $("#run2Threshold").text(threshold);
+        }
+        onChangeWeightThreshold();
+      });
+      onChangeWeightThreshold();
+      return false; // prevent nav
+    }
+
+    function closeDoc() {
+      $('#DocumentOverlay,#DocumentDetails').remove();
+    }
+    function ding() {
+      console.log("Reaching limits! Alert");
+    }
+
+    $(function () {
+      if (singleRunView) {
+        $("#runName").empty();
+        $("#runName").append($('<h6 style="text-align: center;"></h6>').text(data.meta.run1_name));
+      } else {
+        $('#Run1Name').text(data.meta.run1_name);
+        $('#Run2Name').text(data.meta.run2_name);
+      }
+      var $select = $('#Queries');
+      var queryDisplayField = null;
+      $.each(data.meta.queryFields, function (i, e) {
+        if (e !== 'query_id') {
+          queryDisplayField = e;
+          return false; // break
+        }
+      });
+      $.each(data.queries, function (_, query) {
+        if (!singleRunView){
+          $('<option>').attr('value', query['fields']['query_id']).attr("data-tokens", query.fields.query_id + " " + query.fields[queryDisplayField]).attr('data-subtext', query.fields.contrast.name+': '+query.fields.contrast.value.toFixed(3)).text(query.fields[queryDisplayField]).appendTo($select);
+        } else {
+          $('<option>').attr('value', query['fields']['query_id']).text(query.fields[queryDisplayField]).appendTo($select);
+        }
+      });
+      $select.change(selectQuery).change();
+      $(document).on('mouseenter', '.card', onCardEnter);
+      $(document).on('mouseleave', '.card', onCardLeave);
+      $(document).on('click', '.card', onDocInfoClick);
+      $(document).on('click', '#DocumentOverlay', closeDoc);
+      $(document).keyup(function (e) {
+        if (e.key === "Escape") {
+          closeDoc();
+        }
+        if (e.key === "ArrowLeft" && !$("#Queries").is(":focus")) {
+          var prev_val = $("#Queries option:selected").prev().val();
+          if (typeof prev_val != "undefined") {
+            $select.val(prev_val);
+            $select.trigger("change");
+          } else {
+            ding();
+          }
+        }
+        if (e.key === "ArrowRight" && !$("#Queries").is(":focus")) {
+          var next_val = $("#Queries option:selected").next().val();
+          if (typeof next_val != "undefined") {
+            $select.val(next_val);
+            $select.trigger("change");
+          } else {
+            ding();
+          }
+        }
+      });
+    });
+    $(document).ready(function () {
+      var $select = $('#Queries');
+      if (data.queries.length > 20)
+        $select.attr("data-live-search","true")
+      $select.selectpicker();
+      $("#Query").find("tr").slice(2).attr("class", "query_collapse collapse")
+      $(".query_collapse").on("shown.bs.collapse", function () {
+        text = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrows-angle-contract" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M.172 15.828a.5.5 0 0 0 .707 0l4.096-4.096V14.5a.5.5 0 1 0 1 0v-3.975a.5.5 0 0 0-.5-.5H1.5a.5.5 0 0 0 0 1h2.768L.172 15.121a.5.5 0 0 0 0 .707zM15.828.172a.5.5 0 0 0-.707 0l-4.096 4.096V1.5a.5.5 0 1 0-1 0v3.975a.5.5 0 0 0 .5.5H14.5a.5.5 0 0 0 0-1h-2.768L15.828.879a.5.5 0 0 0 0-.707z"/></svg>';
+        $("#query-collapse-btn").html(text);
+      })
+      $(".query_collapse").on("hidden.bs.collapse", function () {
+        text = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrows-angle-expand" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M5.828 10.172a.5.5 0 0 0-.707 0l-4.096 4.096V11.5a.5.5 0 0 0-1 0v3.975a.5.5 0 0 0 .5.5H4.5a.5.5 0 0 0 0-1H1.732l4.096-4.096a.5.5 0 0 0 0-.707zm4.344-4.344a.5.5 0 0 0 .707 0l4.096-4.096V4.5a.5.5 0 1 0 1 0V.525a.5.5 0 0 0-.5-.5H11.5a.5.5 0 0 0 0 1h2.768l-4.096 4.096a.5.5 0 0 0 0 .707z"></svg>';
+        $("#query-collapse-btn").html(text);
+      })
+    })
+  </script>
+</body>
+
+</html>
+

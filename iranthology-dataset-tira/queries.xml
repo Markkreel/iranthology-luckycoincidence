@@ -1,0 +1,40 @@
+<topics ir-datasets-id="iranthology-lucky-coincidence">
+ <topic number="1">
+  <query>
+   entity recognition
+  </query>
+  <original_query>
+   <query_id>
+    1
+   </query_id>
+   <title>
+    entity recognition
+   </title>
+   <description>
+    Retrieval of documents related to entity recognition.
+   </description>
+   <narrative>
+    Relevant documents should highlight entity recognition and its methods and applications. Documents that do not mention entity recognition are not relevant.
+   </narrative>
+  </original_query>
+ </topic>
+ <topic number="2">
+  <query>
+   relevance assessments
+  </query>
+  <original_query>
+   <query_id>
+    2
+   </query_id>
+   <title>
+    relevance assessments
+   </title>
+   <description>
+    Retrieval of documents related to relevance assessments.
+   </description>
+   <narrative>
+    Relevant documents should highlight relevance assessments and its methods and applications. Documents that do not mention relevance assessments are not relevant.
+   </narrative>
+  </original_query>
+ </topic>
+</topics>
